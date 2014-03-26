@@ -7,7 +7,6 @@
 //
 
 #import "ADTViewController.h"
-#import <AssetsLibrary/AssetsLibrary.h>
 
 
 @interface ADTViewController ()
@@ -18,13 +17,17 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-
+    
     // Get the assets library
-    ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+    if (self.assetsLibrary == nil) {
+        _assetsLibrary = [[ALAssetsLibrary alloc] init];
+    }
+    
+    
     __block NSMutableArray *blockSafeScreenshotPhotos = [NSMutableArray array];
-
+    
     // Enumerate just the photos and videos group by using ALAssetsGroupSavedPhotos.
-    [library enumerateGroupsWithTypes:ALAssetsGroupSavedPhotos
+    [self.assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupSavedPhotos
                            usingBlock:^(ALAssetsGroup *group, BOOL *stop)
      {
          
@@ -49,18 +52,56 @@
                       [blockSafeScreenshotPhotos addObject:alAsset];
                   }
               }
-         }];
+          }];
          NSLog(@"%d possible screenshots", [blockSafeScreenshotPhotos count]);
-         self.screenshotPhotos = [NSArray arrayWithArray:blockSafeScreenshotPhotos];
-         [self.collectionView reloadData];
+         self.screenshotPhotoAssets = [blockSafeScreenshotPhotos copy];
+         [self.collectionView performSelectorOnMainThread:@selector(reloadData) withObject:nil waitUntilDone:NO];
      }
-    failureBlock: ^(NSError *error)
+                         failureBlock: ^(NSError *error)
      {
          // Typically you should handle an error more gracefully than this.
          NSLog(@"No groups");
      }];
 
+}
+
+-(void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    if (!self.screenshotPhotoAssets) {
+        _screenshotPhotoAssets = [[NSMutableArray alloc] init];
+    } else {
+        [self.screenshotPhotoAssets removeAllObjects];
+    }
+    
+    ALAssetsGroupEnumerationResultsBlock screenShotEnumerationBlock = ^(ALAsset *result, NSUInteger index, BOOL *stop) {
+        
+        if (result) {
+//            ALAssetRepresentation *representation = [result defaultRepresentation];
+//            NSDictionary *imageMetadata = [representation metadata];
+//            // Do something interesting with the metadata.
+//            //A screenshot metadata will not have EXIF data (for lens and camera stuff)
+//            //other saved images might not have EXIF data either!
+//            if(![imageMetadata objectForKey:@"{Exif}"]){
+//                NSLog(@"screenshot maybe! %@", imageMetadata);
+//                [self.screenshotPhotoAssets addObject:result];
+//            }//add em all anyway!
+            [self.screenshotPhotoAssets addObject:result];
+
+        }
+    };
+    
+    ALAssetsFilter *onlyPhotosFilter = [ALAssetsFilter allPhotos];
+    [self.assetsGroup setAssetsFilter:onlyPhotosFilter];
+    [self.assetsGroup enumerateAssetsUsingBlock:screenShotEnumerationBlock];
+
 	// Do any additional setup after loading the view, typically from a nib.
+}
+- (void)viewDidAppear:(BOOL)animated {
+    
+    [super viewDidAppear:animated];
+    [self.collectionView reloadData];
 }
 
 - (void)didReceiveMemoryWarning
@@ -70,7 +111,7 @@
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    return self.screenshotPhotos.count;
+    return self.screenshotPhotoAssets.count;
 }
 
 
@@ -79,9 +120,14 @@
     
     UICollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:identifier forIndexPath:indexPath];
     
+    // load the asset for this cell
+    ALAsset *asset = self.screenshotPhotoAssets[indexPath.row];
+    CGImageRef thumbnailImageRef = [asset thumbnail];
+    UIImage *thumbnail = [UIImage imageWithCGImage:thumbnailImageRef];
+    
+    // apply the image to the cell
     UIImageView *screenshotImageView = (UIImageView *)[cell viewWithTag:100];
-    ALAsset *screenshotAsset = [self.screenshotPhotos objectAtIndex:indexPath.row];
-    screenshotImageView.image = (__bridge UIImage *)([[screenshotAsset defaultRepresentation] fullScreenImage]);
+    screenshotImageView.image = thumbnail;
     
     return cell;
 }

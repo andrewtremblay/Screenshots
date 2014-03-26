@@ -7,7 +7,11 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <AssetsLibrary/AssetsLibrary.h>
 
 @interface ADTViewController : UICollectionViewController
-@property NSArray *screenshotPhotos;
+@property (nonatomic, strong) ALAssetsLibrary *assetsLibrary;
+@property (nonatomic, strong) ALAssetsGroup *assetsGroup;
+@property (nonatomic, strong) NSMutableArray *screenshotPhotoAssets;
+
 @end
