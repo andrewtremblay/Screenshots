@@ -122,7 +122,7 @@
     
     // load the asset for this cell
     ALAsset *asset = self.screenshotPhotoAssets[indexPath.row];
-    CGImageRef thumbnailImageRef = [asset thumbnail];
+    CGImageRef thumbnailImageRef = [[asset defaultRepresentation] fullScreenImage];
     UIImage *thumbnail = [UIImage imageWithCGImage:thumbnailImageRef];
     
     // apply the image to the cell
