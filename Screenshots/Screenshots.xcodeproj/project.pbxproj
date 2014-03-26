@@ -471,6 +471,7 @@
 				318808A218E25B0C00B09C95 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		318808A318E25B0C00B09C95 /* Build configuration list for PBXNativeTarget "ScreenshotsTests" */ = {
 			isa = XCConfigurationList;
@@ -479,6 +480,7 @@
 				318808A518E25B0C00B09C95 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
