@@ -21,7 +21,8 @@
 
     // Get the assets library
     ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
-    
+    __block NSMutableArray *blockSafeScreenshotPhotos = [NSMutableArray array];
+
     // Enumerate just the photos and videos group by using ALAssetsGroupSavedPhotos.
     [library enumerateGroupsWithTypes:ALAssetsGroupSavedPhotos
                            usingBlock:^(ALAssetsGroup *group, BOOL *stop)
@@ -30,10 +31,9 @@
          // Within the group enumeration block, filter to enumerate just photos.
          [group setAssetsFilter:[ALAssetsFilter allPhotos]];
          
+         
          // For this example, we're only interested in the first item.
-         [group enumerateAssetsAtIndexes:[NSIndexSet indexSetWithIndex:0]
-                                 options:0
-                              usingBlock:^(ALAsset *alAsset, NSUInteger index, BOOL *innerStop)
+         [group enumerateAssetsUsingBlock:^(ALAsset *alAsset, NSUInteger index, BOOL *innerStop)
           {
               
               // The end of the enumeration is signaled by asset == nil.
@@ -41,11 +41,20 @@
                   ALAssetRepresentation *representation = [alAsset defaultRepresentation];
                   NSDictionary *imageMetadata = [representation metadata];
                   // Do something interesting with the metadata.
-                  NSLog(@"Image Metadata! %@", imageMetadata);
+                  //A screenshot metadata will not have EXIF data (for lens and camera stuff)
+                  //other saved images might not have EXIF data either!
+                  if(![imageMetadata objectForKey:@"{Exif}"]){
+                      NSLog(@"screenshot maybe! %@", imageMetadata);
+                      
+                      [blockSafeScreenshotPhotos addObject:alAsset];
+                  }
               }
-          }];
+         }];
+         NSLog(@"%d possible screenshots", [blockSafeScreenshotPhotos count]);
+         self.screenshotPhotos = [NSArray arrayWithArray:blockSafeScreenshotPhotos];
+         [self.collectionView reloadData];
      }
-                         failureBlock: ^(NSError *error)
+    failureBlock: ^(NSError *error)
      {
          // Typically you should handle an error more gracefully than this.
          NSLog(@"No groups");
@@ -71,7 +80,8 @@
     UICollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:identifier forIndexPath:indexPath];
     
     UIImageView *screenshotImageView = (UIImageView *)[cell viewWithTag:100];
-    screenshotImageView.image = [UIImage imageNamed:[self.screenshotPhotos objectAtIndex:indexPath.row]];
+    ALAsset *screenshotAsset = [self.screenshotPhotos objectAtIndex:indexPath.row];
+    screenshotImageView.image = (__bridge UIImage *)([[screenshotAsset defaultRepresentation] fullScreenImage]);
     
     return cell;
 }
